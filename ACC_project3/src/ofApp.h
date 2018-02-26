@@ -57,4 +57,7 @@ class ofApp : public ofBaseApp{
 		void stringFrequency(string sortString);
 		vector<vector <char> > freqString;
 		vector<char> freqChar;
+
+
+		int checkFrequency(vector<vector <char> > checkVec, char checkChar);
 };

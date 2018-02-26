@@ -40,13 +40,23 @@ void ofApp::draw(){
 	ofFill;
 	ofDrawRectangle(0, 0, 500, 200);
 	ofSetColor(100, 0, 0);
-	ofDrawBitmapString(typing, 10, 0);
-	ofDrawBitmapString(newString, 10, 20);
-	ofDrawBitmapString("Tab = start/ star", 10, 40);
-	ofDrawBitmapString("Volume: " + ofToString(volume), 10, 60);
-	ofDrawBitmapString("Move the mouse left and right to change the speed", 10, 80);
+	ofDrawBitmapString("New string: " +typing, 10, 20);
+	ofDrawBitmapString("Current string: " + newString, 10, 40);
+	ofDrawBitmapString("Current volume: " + ofToString(volume), 10, 60);
+	ofDrawBitmapString("Current Char: " + ofToString(asciiVal), 10, 80);
 	ofDrawBitmapString("Reading speed: " + ofToString(readingSpeed), 10, 100);
-	ofDrawBitmapString("Type something and press enter", 10, 120);
+
+
+	ofSetColor(100, 200, 100);
+	ofFill;
+	ofDrawRectangle(450, 500, ofGetWidth()- 460, 200);
+	ofSetColor(100, 0, 0);
+	ofDrawBitmapString("Type something and press enter", 460, 520);
+	ofDrawBitmapString("Move the mouse left and right to change the speed", 460, 540);
+	ofDrawBitmapString("Tab = start/ star", 460, 560);
+	ofDrawBitmapString("The ascii value of each letter is used to control it's frequency.", 460, 580);
+	ofDrawBitmapString("The volume is determined by the quantity of a given letter.", 460, 600);
+
 
 
 
@@ -60,17 +70,17 @@ void ofApp::keyPressed(int key){
 	if (key == OF_KEY_RETURN) {
 		newString = typing;
 		typing = "";
-		//stringFrequency(newString);
+		stringFrequency(newString);
 	} else if (key == OF_KEY_BACKSPACE) {
 		if (typing != "") {
 			typing.erase(typing.length() - 1, typing.length());
 		}
 	} else if (key == '-' || key == '_') {
-		volume -= 0.05;
-		volume = MAX(volume, 0);
+		//volume -= 0.05;
+		//volume = MAX(volume, 0);
 	} else if (key == '+' || key == '=') {
-		volume += 0.05;
-		volume = MIN(volume, 1);
+		//volume += 0.05;
+		//volume = MIN(volume, 1);
 	} else if (key == 9) {
 		if (pause) {
 			soundStream.start();
@@ -173,6 +183,9 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels) {
 		//map the buffer position to the string
 		int mapString = (int)ofMap(t, 0.0, (float)newString.length() * readingSpeed, 0.0, (float)newString.length());
 
+		volume = (float)checkFrequency(freqString, newString.at(mapString))/ (float)newString.size();
+
+
 		asciiVal = newString.at(mapString);
 		//std::cout << "T: "<<t <<" MAP: "<<mapString<< "\n";
 
@@ -208,23 +221,41 @@ void ofApp::stringFrequency(string sortString) {
 
 	freqString.clear();
 
+	bool match;
+
 	if (sortString != "") {
 		for (int i = 0; i < sortString.length(); i++) {
 			freqChar.clear();
 			
+			match = 0;
+
 			//check if char is already in string
-			for (int b = 0; b < freqString.size(); b++) {
-				if (sortString.at(i) == freqString[b][0]) {
-					freqString[i][1] ++;
-					break;
+
+			if (freqString.size() > 0) {
+				for (int b = 0; b < freqString.size(); b++) {
+					if (sortString.at(i) == freqString[b][0]) {
+						freqString[b][1] ++;
+						match = 1;
+						break;
+					}
 				}
-				else {
-					freqChar.push_back(sortString.at(i));
-					freqChar.push_back(1);
-					freqString.push_back(freqChar);
-				}
-			}
+			} 
+			
+			if (match == 0) {
+				freqChar.push_back(sortString.at(i));
+				freqChar.push_back(1);
+				freqString.push_back(freqChar);
+			}	
 		}
-		std::cout << "Unique characters: " << freqString.size() << "\n";
+		//std::cout << "Unique characters: " << freqString.size() << "\n";
+	}
+}
+
+int ofApp::checkFrequency(vector<vector <char> > checkVec, char checkChar) {
+
+	for (int v = 0; v < checkVec.size(); v++) {
+		if (checkChar == checkVec[v][0]) {
+			return checkVec[v][1];
+		}
 	}
 }
