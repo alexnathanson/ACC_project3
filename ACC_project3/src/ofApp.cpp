@@ -26,11 +26,41 @@ void ofApp::setup(){
 
 	readingSpeed = 33; //1000 would be 1 letter per second
 	newString = "";
+	playString = "";
+
+	textH = 0;
+	textH2 = 500;
+
+	newSearch = false;
+
+	line = 0;
 }
 
 //--------------------------------------------------------------
 void ofApp::update() {
 	ofBackground(0);
+
+	url = "http://api.nytimes.com/svc/search/v2/articlesearch.json?q=" + newString + "&page=2&sort=newest&api-key=52697f63c9ade478ec6f2c7d71811aa6:17:61363877";
+
+	if (newSearch == true) {
+		// Now parse the JSON
+		parsingSuccessful = json.open(url);
+		
+		newLine(json["response"]["docs"][line]["headline"]["main"].asString());
+		/*playString = json["response"]["docs"][line]["headline"]["main"].asString();
+		stringFrequency(playString);*/
+		
+		newSearch = false;
+
+
+		if (parsingSuccessful)
+		{
+			ofLogNotice("ofApp::setup") << json.getRawString(true);
+		}
+		else {
+			ofLogNotice("ofApp::setup") << "Failed to parse JSON.";
+		}
+	}
 }
 
 //--------------------------------------------------------------
@@ -38,28 +68,48 @@ void ofApp::draw(){
 	//text
 	ofSetColor(100, 200, 100);
 	ofFill;
-	ofDrawRectangle(0, 0, 500, 200);
+	ofDrawRectangle(0, textH, 500, 180);
 	ofSetColor(100, 0, 0);
-	ofDrawBitmapString("New string: " +typing, 10, 20);
-	ofDrawBitmapString("Current string: " + newString, 10, 40);
-	ofDrawBitmapString("Current volume: " + ofToString(volume), 10, 60);
-	ofDrawBitmapString("Current Char: " + ofToString(asciiVal), 10, 80);
-	ofDrawBitmapString("Reading speed: " + ofToString(readingSpeed), 10, 100);
+	ofDrawBitmapString("New York Times Headline Sonifier", 10, textH + 20);
+	ofDrawBitmapString("New search: " +typing, 10, textH + 40);
+	ofDrawBitmapString("Current search: " + newString, 10, textH + 60);
+	ofDrawBitmapString("Current volume: " + ofToString(volume), 10, textH + 80);
+	ofDrawBitmapString("Current Char: " + ofToString(asciiVal), 10, textH + 100);
+	ofDrawBitmapString("Reading speed: " + ofToString(readingSpeed), 10, textH + 120);
+	ofDrawBitmapString("Unique chars: " + ofToString(freqString.size()), 10, textH + 140);
+	ofDrawBitmapString("Current line: " + ofToString(line), 10, textH + 160);
+
+	//ofDrawBitmapString("Unique words: " + ofToString(wordString.size()), 10, textH + 140);
+
 
 
 	ofSetColor(100, 200, 100);
 	ofFill;
-	ofDrawRectangle(450, 500, ofGetWidth()- 460, 200);
+	ofDrawRectangle(450, textH2, ofGetWidth()- 460, 120);
 	ofSetColor(100, 0, 0);
-	ofDrawBitmapString("Type something and press enter", 460, 520);
-	ofDrawBitmapString("Move the mouse left and right to change the speed", 460, 540);
-	ofDrawBitmapString("Tab = start/ star", 460, 560);
-	ofDrawBitmapString("The ascii value of each letter is used to control it's frequency.", 460, 580);
-	ofDrawBitmapString("The volume is determined by the quantity of a given letter.", 460, 600);
+	ofDrawBitmapString("Type something to search and press enter", 460, textH2 + 20);
+	ofDrawBitmapString("Move the mouse left and right to change the speed", 460, textH2 + 40);
+	ofDrawBitmapString("Tab = start/ star", 460, textH2 + 60);
+	ofDrawBitmapString("The ascii value of each letter is used to control it's frequency.", 460, textH2 + 80);
+	ofDrawBitmapString("The volume is determined by the quantity of a given letter.", 460, textH2 + 100);
 
 
 
 
+	for (Json::ArrayIndex i = 0; i < json["response"]["docs"].size(); ++i)
+	{
+		std::string title = json["response"]["docs"][i]["headline"]["main"].asString();
+		std::string author = json["response"]["docs"][i]["byline"]["original"].asString();
+		std::string date = json["response"]["docs"][i]["pub_date"].asString();
+		std::string text = title + " - " + author + " (" + date + ")";
+		if (i == line) {
+			ofSetColor(255, 255, 255);
+		}
+		else {
+			ofSetColor(255, 0, 0);
+		}
+		ofDrawBitmapString(text, 20, 200 + (i * 20));
+	}
 }
 
 //--------------------------------------------------------------
@@ -70,7 +120,7 @@ void ofApp::keyPressed(int key){
 	if (key == OF_KEY_RETURN) {
 		newString = typing;
 		typing = "";
-		stringFrequency(newString);
+		newSearch = true;
 	} else if (key == OF_KEY_BACKSPACE) {
 		if (typing != "") {
 			typing.erase(typing.length() - 1, typing.length());
@@ -88,6 +138,16 @@ void ofApp::keyPressed(int key){
 		} else {
 			soundStream.stop();
 			pause = true;
+		}
+	}	else if (key == OF_KEY_UP) {
+		if (line < 10) {
+			line++;
+			newLine(json["response"]["docs"][line]["headline"]["main"].asString());
+		}
+	} else if(key == OF_KEY_DOWN){
+		if (line > 0) {
+			line = line - 1;
+			newLine(json["response"]["docs"][line]["headline"]["main"].asString());
 		}
 	} else {
 		typing += key;
@@ -149,7 +209,7 @@ output is always an array of samples. We can represent arrays using pointers
 */
 //--------------------------------------------------------------
 void ofApp::audioOut(float * output, int bufferSize, int nChannels) {
-	//pan = 0.5f;
+	pan = 0.5f;
 	float leftScale = 1 - pan;
 	float rightScale = pan;
 
@@ -169,7 +229,7 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels) {
 	//}
 
 	//buffer chunk
-	float buffChunk = bufferSize / (float)newString.length();
+	float buffChunk = bufferSize / (float)playString.length();
 
 	// sin (n) seems to have trouble when n is very large, so we
 	// keep phase in the range of 0-TWO_PI like this:
@@ -177,16 +237,16 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels) {
 
 	//phaseAdder = 0.95f * phaseAdder + 0.05f * phaseAdderTarget;
 		
-	if (newString.length() != 0) {
+	if (playString.length() != 0) {
 			
-		t = fmod(ofGetElapsedTimeMillis(),(float)newString.length() * readingSpeed);
+		t = fmod(ofGetElapsedTimeMillis(),(float)playString.length() * readingSpeed);
 		//map the buffer position to the string
-		int mapString = (int)ofMap(t, 0.0, (float)newString.length() * readingSpeed, 0.0, (float)newString.length());
+		int mapString = (int)ofMap(t, 0.0, (float)playString.length() * readingSpeed, 0.0, (float)playString.length());
 
-		volume = (float)checkFrequency(freqString, newString.at(mapString))/ (float)newString.size();
+		volume = (float)checkFrequency(freqString, playString.at(mapString))/ (float)playString.size();
 
 
-		asciiVal = newString.at(mapString);
+		asciiVal = playString.at(mapString);
 		//std::cout << "T: "<<t <<" MAP: "<<mapString<< "\n";
 
 		phaseAdderTarget = ((2000.0f * (float)asciiVal) / (float)sampleRate) * TWO_PI;
@@ -258,4 +318,9 @@ int ofApp::checkFrequency(vector<vector <char> > checkVec, char checkChar) {
 			return checkVec[v][1];
 		}
 	}
+}
+
+void ofApp::newLine(string jsonString) {
+	playString = json["response"]["docs"][line]["headline"]["main"].asString();
+	stringFrequency(playString);
 }

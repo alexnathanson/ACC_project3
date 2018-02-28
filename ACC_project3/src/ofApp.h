@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "ofxJSON.h"
 
 class ofApp : public ofBaseApp{
 
@@ -41,6 +42,9 @@ class ofApp : public ofBaseApp{
 		float readingSpeed;
 			
 		bool pause;
+		
+		int textH;
+		int textH2;
 
 		//------------------- for the simple sine wave synthesis
 		float 	targetFrequency;
@@ -58,6 +62,23 @@ class ofApp : public ofBaseApp{
 		vector<vector <char> > freqString;
 		vector<char> freqChar;
 
+		//not currently implemented
+		vector<string> freqWord;
+		vector<vector <string> > freqAllStrings;
 
 		int checkFrequency(vector<vector <char> > checkVec, char checkChar);
+
+		string playString;
+
+		//NYT API
+		string url;
+
+		ofxJSONElement json;
+
+		bool newSearch;
+		bool parsingSuccessful;
+
+		int line;
+
+		void newLine(string jsonString);
 };
