@@ -40,7 +40,20 @@ void ofApp::setup(){
 void ofApp::update() {
 	ofBackground(0);
 
-	url = "http://api.nytimes.com/svc/search/v2/articlesearch.json?q=" + newString + "&page=2&sort=newest&api-key=52697f63c9ade478ec6f2c7d71811aa6:17:61363877";
+	//seperate by word and add + signs
+	vector <string> format = ofSplitString(newString, " "); //doesn't need to be cleared because it's being initialized here
+	
+	string formed;
+	formed = "";
+
+	for (int r = 0; r < format.size(); r++) {
+		formed = format[r] + "+";
+	}
+
+	formed.erase(formed.size(), 1); //erase the last +
+
+
+	url = "http://api.nytimes.com/svc/search/v2/articlesearch.json?q=" + formed + "&page=2&sort=newest&api-key=52697f63c9ade478ec6f2c7d71811aa6:17:61363877";
 
 	if (newSearch == true) {
 		// Now parse the JSON
