@@ -2,10 +2,14 @@
 //Alex Nathanson & Mianying Chen
 #include "ofApp.h"
 
+
 //--------------------------------------------------------------
 void ofApp::setup(){
 	ofSetFrameRate(60);
 
+	setupGui();
+
+	setMode = 0;
 
 	bufferSize = 512;
 	sampleRate = 44100;
@@ -34,6 +38,13 @@ void ofApp::setup(){
 	newSearch = false;
 
 	line = 0;
+
+	searchKey = "8c66b14d868d480b89812149a2288372";
+
+	loading = false;
+	newTime = false;
+	allDone = true;
+
 }
 
 //--------------------------------------------------------------
@@ -52,28 +63,23 @@ void ofApp::update() {
 
 	formed.erase(formed.size(), 1); //erase the last +
 
-
-	url = "http://api.nytimes.com/svc/search/v2/articlesearch.json?q=" + formed + "&page=2&sort=newest&api-key=52697f63c9ade478ec6f2c7d71811aa6:17:61363877";
-
 	if (newSearch == true) {
-		// Now parse the JSON
-		parsingSuccessful = json.open(url);
-		
-		newLine(json["response"]["docs"][line]["headline"]["main"].asString());
-		/*playString = json["response"]["docs"][line]["headline"]["main"].asString();
-		stringFrequency(playString);*/
-		
-		newSearch = false;
-
-
-		if (parsingSuccessful)
-		{
-			ofLogNotice("ofApp::setup") << json.getRawString(true);
-		}
-		else {
-			ofLogNotice("ofApp::setup") << "Failed to parse JSON.";
+	std:cout << "mode: " << mode << endl;
+		switch (mode) {
+		case 0:
+			searchText(formed);
+			break;
+		case 1:
+			searchTime(formed);
+			break;
 		}
 	}
+
+	if (!allDone) {
+		searchTime(formed);
+	}
+	
+	
 }
 
 //--------------------------------------------------------------
@@ -123,12 +129,16 @@ void ofApp::draw(){
 		}
 		ofDrawBitmapString(text, 20, 200 + (i * 20));
 	}
+
+	gui.draw();
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
 	//uncomment out if you want to see the ascii value of something
 	//std::cout << key << "\n";
+
+	string specials = "~!@#%^&*()[]<>";
 
 	if (key == OF_KEY_RETURN) {
 		newString = typing;
@@ -162,8 +172,9 @@ void ofApp::keyPressed(int key){
 			line = line - 1;
 			newLine(json["response"]["docs"][line]["headline"]["main"].asString());
 		}
-	} else {
-		typing += key;
+	} else if (key < 1000 && specials.find(key) == string::npos) {
+		//remove special characters
+			typing += key;
 	}
 }
 
@@ -275,8 +286,6 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels) {
 
 	for (int i = 0; i < bufferSize; i++) {
 
-			
-
 		//phase = ;
 		//phase = (targetFrequency / (float)sampleRate) * TWO_PI;
 		//std::cout << "Phase: "<<phase << "\n";
@@ -336,4 +345,187 @@ int ofApp::checkFrequency(vector<vector <char> > checkVec, char checkChar) {
 void ofApp::newLine(string jsonString) {
 	playString = json["response"]["docs"][line]["headline"]["main"].asString();
 	stringFrequency(playString);
+}
+
+void ofApp::setupGui() {
+	gui.setup();
+	gui.add(mode.setup("Mode", true));
+	gui.add(loop.setup("Loop ", true));
+
+}
+
+void ofApp::searchText(string input) {
+
+	//old key: 52697f63c9ade478ec6f2c7d71811aa6:17:61363877
+	url = "http://api.nytimes.com/svc/search/v2/articlesearch.json?q=" + input + "&page=2&sort=newest&api-key=" + searchKey;
+
+	if (newSearch == true) {
+		// Now parse the JSON
+		parsingSuccessful = json.open(url);
+
+		newLine(json["response"]["docs"][line]["headline"]["main"].asString());
+		/*playString = json["response"]["docs"][line]["headline"]["main"].asString();
+		stringFrequency(playString);*/
+
+		newSearch = false;
+
+
+		if (parsingSuccessful)
+		{
+			ofLogNotice("ofApp::setup") << json.getRawString(true);
+		}
+		else {
+			ofLogNotice("ofApp::setup") << "Failed to parse JSON.";
+		}
+	}
+}
+
+void ofApp::searchTime(string input) {
+
+	//filter the results
+	string timeFil = "";
+	/*if (filTog == true) {
+		timeFil = ""&filter=(Per)";
+	}*/	
+
+	//initialize
+	if (newSearch == true) {
+		newSearch = false;
+		allDone = false;
+		y = 2014;
+		years = 3;
+		yStart = y;
+
+		yearMonth.clear();
+
+		m = 1;
+
+		//restrict to 2017
+		//change this to get todays date
+		if (y + years > 2017) {
+			years = 2017 - y;
+		}
+
+		ofLogNotice("Search Time") << "It's time!";
+	}
+
+	//check if we're finished
+	if (!allDone) {
+
+		if (y > (years + yStart)-1) {
+			allDone = true;
+			//ofLogNotice("Done", ofToString(y));
+		}
+		
+		//clear the month vector
+		if (m == 1) {
+			hitMonth.clear();
+		}
+
+		//make the next request
+		if (!getJSON.isThreadRunning() && loading == false) {
+
+			year = ofToString(y);
+			month = formatDate(m);
+			end = year + month;
+			begin = year + month.replace(2, 2, "01");
+						
+			loading = true;
+
+			getJSON.setup(input, begin, end, searchKey);
+			getJSON.startThread();
+		}
+
+		//get data and do something with it
+		if (!getJSON.isThreadRunning() && loading == true) {
+			if (getJSON.parsingT)
+			{
+				aHit = getJSON.hits;
+				//ofLogNotice("ofApp::setup") << getJSON.jsonT.getRawString(true);
+				ofLogNotice("Returned Hits", begin + " " + ofToString(aHit));
+			}
+			else {
+				ofLogNotice("ofApp::setup") << "Failed to parse JSON.";
+			}
+
+			loading = false;
+
+			//increment the months + year
+			if (m < 12) {
+				m++;
+				hitMonth.push_back(aHit);
+			}
+			else {
+				hitMonth.push_back(aHit);
+				yearMonth.push_back(hitMonth);
+				m = 1;
+				y++;
+			}
+		}
+
+		if (allDone) {
+			printVec(yearMonth);
+		}
+	}
+}
+
+void ofApp::playText(string pTe) {
+
+}
+
+void ofApp::playTime(string pTi) {
+
+}
+
+string ofApp::formatDate(int month) {
+
+	switch (month) {
+		case 1:
+			mString = "0131";
+			break;
+		case 2:
+			mString = "0228";
+			break;
+		case 3:
+			mString = "0331";
+			break;
+		case 4:
+			mString = "0430";
+			break;
+		case 5:
+			mString = "0531";
+			break;
+		case 6:
+			mString = "0630";
+			break;
+		case 7:
+			mString = "0731";
+			break;
+		case 8:
+			mString = "0831";
+			break;
+		case 9:
+			mString = "0930";
+			break;
+		case 10:
+			mString = "1031";
+			break;
+		case 11:
+			mString = "1130";
+			break;
+		case 12:
+			mString = "1231";
+			break;
+	}
+
+	return mString;
+}
+
+void ofApp::printVec(vector<vector <int> > vov) {
+
+	for (int a = 0; a < vov.size(); a++) {
+		for (int b = 0; b < vov[a].size(); b++) {
+			std::cout << vov[a][b] << endl;
+		}
+	}
 }

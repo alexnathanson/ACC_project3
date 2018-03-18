@@ -2,6 +2,8 @@
 
 #include "ofMain.h"
 #include "ofxJSON.h"
+#include "ofxGui.h"
+#include "jsonThread.h"
 
 class ofApp : public ofBaseApp{
 
@@ -72,6 +74,8 @@ class ofApp : public ofBaseApp{
 
 		//NYT API
 		string url;
+		string searchKey;
+		string mString;
 
 		ofxJSONElement json;
 
@@ -81,4 +85,50 @@ class ofApp : public ofBaseApp{
 		int line;
 
 		void newLine(string jsonString);
+
+		//GUI
+		ofxPanel gui;
+
+		void setupGui();
+		ofxToggle	mode;
+		ofxToggle	loop;
+
+		int setMode;
+
+		void searchText(string input);
+		void searchTime(string input);
+
+
+		void playText(string pTe);
+		void playTime(string pTi);
+
+		string formatDate(int month);
+
+		vector <vector <int> > yearMonth;
+
+		//mutex
+		//mutex getJson;
+
+		jsonThread getJSON;
+
+		bool loading;
+
+		bool newTime;
+
+		int yStart;
+		int years;
+		int y;
+		int m;
+		bool allDone;
+
+		string year;
+		string month;
+		string end;
+		string begin;
+
+		vector <int> hitMonth;
+
+		//Json::Value aHit;
+		int aHit;
+		void printVec(vector<vector <int> >);
 };
