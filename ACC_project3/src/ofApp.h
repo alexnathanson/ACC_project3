@@ -28,6 +28,7 @@ class ofApp : public ofBaseApp{
 		string newString;
 		
 		void audioOut(float * input, int bufferSize, int nChannels);
+		//void audioOut(ofSoundBuffer &output);
 
 		ofSoundStream soundStream;
 
@@ -37,7 +38,7 @@ class ofApp : public ofBaseApp{
 		float 	pan;
 		int		sampleRate;
 		bool 	bNoise;
-		float 	volume;
+		float 	volumeOne;
 
 		float t; //time
 
@@ -53,6 +54,11 @@ class ofApp : public ofBaseApp{
 		float 	phase;
 		float 	phaseAdder;
 		float 	phaseAdderTarget;
+
+		float 	targetFrequencyB;
+		float 	phaseB;
+		float 	phaseAdderB;
+		float 	phaseAdderTargetB;
 
 		float heightPct;
 
@@ -88,26 +94,26 @@ class ofApp : public ofBaseApp{
 
 		//GUI
 		ofxPanel gui;
-
 		void setupGui();
 		ofxToggle	mode;
-		ofxToggle	loop;
+		ofxFloatSlider	masterVol;
+		ofxIntSlider	start;
+		ofxIntSlider	duration;
+		ofxFloatSlider	freqA;
+		ofxFloatSlider	freqB;
+		ofxToggle	volScale;
+		ofxFloatSlider	lerpIncrement;
+
+		float volScaler;
 
 		int setMode;
 
 		void searchText(string input);
 		void searchTime(string input);
 
-
-		void playText(string pTe);
-		void playTime(string pTi);
-
 		string formatDate(int month);
 
 		vector <vector <int> > yearMonth;
-
-		//mutex
-		//mutex getJson;
 
 		jsonThread getJSON;
 
@@ -131,4 +137,39 @@ class ofApp : public ofBaseApp{
 		//Json::Value aHit;
 		int aHit;
 		void printVec(vector<vector <int> >);
+
+		void prepVec(vector<vector <int> >);
+		int vecMax;
+		int vecMin;
+
+		int vecItems;
+		vector<int> spilledVec;
+
+		int hitVal;
+
+		int currentDate;
+		int currentVal;
+
+		float sampleA;
+		float sampleB;
+
+		float volA;
+		float volB;
+
+		float waveSelector(float phase, int waveType);
+		int pickWave;
+		string thisWave;
+
+		void stringWave();
+
+		void changeSound();
+		void sustainSound();
+		float lerpedVol;
+		int lerpPlace;
+
+		float destination;
+
+		float prevDest;
+
+		float lerpAmt;
 };

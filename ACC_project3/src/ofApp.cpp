@@ -16,15 +16,15 @@ void ofApp::setup(){
 	phase = 0;
 	phaseAdder = 0.0f;
 	phaseAdderTarget = 0.0f;
-	volume = 0.1f;
 	bNoise = false;
 
 	lAudio.assign(bufferSize, 0.0);
 	rAudio.assign(bufferSize, 0.0);
 
 	soundStream.printDeviceList();
+	soundStream.setup(this, 2, 0, sampleRate, bufferSize, 2);
 
-	soundStream.setup(this, 2, 0, sampleRate, bufferSize, 4);
+	//ofSoundStreamSetup(2, 0, sampleRate, 512, 2);
 
 	pause = false;
 
@@ -45,13 +45,21 @@ void ofApp::setup(){
 	newTime = false;
 	allDone = true;
 
+	pickWave = 1;
+	thisWave = "sine";
+
+	lerpPlace = 0;
+	prevDest = 0.0;
 }
 
 //--------------------------------------------------------------
 void ofApp::update() {
 	ofBackground(0);
 
-	//seperate by word and add + signs
+	//seperate searchs
+	//ofSplitString(newString, ",");
+	//format search term
+	//seperate by word and replace spaces with + signs
 	vector <string> format = ofSplitString(newString, " "); //doesn't need to be cleared because it's being initialized here
 	
 	string formed;
@@ -78,8 +86,11 @@ void ofApp::update() {
 	if (!allDone) {
 		searchTime(formed);
 	}
-	
-	
+
+	if (spilledVec.size() != 0) {
+		changeSound();
+	}
+
 }
 
 //--------------------------------------------------------------
@@ -87,21 +98,26 @@ void ofApp::draw(){
 	//text
 	ofSetColor(100, 200, 100);
 	ofFill;
-	ofDrawRectangle(0, textH, 500, 180);
+	ofDrawRectangle(0, textH, 500, 220);
 	ofSetColor(100, 0, 0);
-	ofDrawBitmapString("New York Times Headline Sonifier", 10, textH + 20);
+	ofDrawBitmapString("New York Times History Sonifier", 10, textH + 20);
 	ofDrawBitmapString("New search: " +typing, 10, textH + 40);
 	ofDrawBitmapString("Current search: " + newString, 10, textH + 60);
-	ofDrawBitmapString("Current volume: " + ofToString(volume), 10, textH + 80);
-	ofDrawBitmapString("Current Char: " + ofToString(asciiVal), 10, textH + 100);
-	ofDrawBitmapString("Reading speed: " + ofToString(readingSpeed), 10, textH + 120);
-	ofDrawBitmapString("Unique chars: " + ofToString(freqString.size()), 10, textH + 140);
-	ofDrawBitmapString("Current line: " + ofToString(line), 10, textH + 160);
-
+	if (mode == 0) {
+		ofDrawBitmapString("Current Char: " + ofToString(asciiVal), 10, textH + 100);
+		ofDrawBitmapString("Reading speed: " + ofToString(readingSpeed), 10, textH + 120);
+		ofDrawBitmapString("Unique chars: " + ofToString(freqString.size()), 10, textH + 140);
+		ofDrawBitmapString("Current line: " + ofToString(line), 10, textH + 160);
+	}
+	else if (mode == 1) {
+		ofDrawBitmapString("Current Date: " + currentDate , 10, textH + 100);
+		ofDrawBitmapString("Current Vol: " + ofToString(volA), 10, textH + 120);
+		ofDrawBitmapString("Reading speed: " + ofToString(readingSpeed), 10, textH + 140);
+		ofDrawBitmapString("Total hits, current hit, destination: " + ofToString(vecItems) + ":" + ofToString(lerpPlace) + ":" + ofToString(destination), 10, textH + 160);
+		ofDrawBitmapString("Wave type: " + thisWave, 10, textH + 180);
+	}
+	
 	//ofDrawBitmapString("Unique words: " + ofToString(wordString.size()), 10, textH + 140);
-
-
-
 	ofSetColor(100, 200, 100);
 	ofFill;
 	ofDrawRectangle(450, textH2, ofGetWidth()- 460, 120);
@@ -149,11 +165,17 @@ void ofApp::keyPressed(int key){
 			typing.erase(typing.length() - 1, typing.length());
 		}
 	} else if (key == '-' || key == '_') {
-		//volume -= 0.05;
-		//volume = MAX(volume, 0);
+		pickWave -= 1;
+		if (pickWave == 0) {
+			pickWave = 4;
+		}
+		stringWave();
 	} else if (key == '+' || key == '=') {
-		//volume += 0.05;
-		//volume = MIN(volume, 1);
+		pickWave += 1;
+		if (pickWave == 5) {
+			pickWave = 1;
+		}
+		stringWave();
 	} else if (key == 9) {
 		if (pause) {
 			soundStream.start();
@@ -233,69 +255,68 @@ output is always an array of samples. We can represent arrays using pointers
 */
 //--------------------------------------------------------------
 void ofApp::audioOut(float * output, int bufferSize, int nChannels) {
+//void ofApp::audioOut(ofSoundBuffer &output) {
+
 	pan = 0.5f;
 	float leftScale = 1 - pan;
 	float rightScale = pan;
 
-
-	////pan based on position of word
-	//if (newString != "") {
-	//	for (int w = 0; w < newString.length(); w++) {
-	//		pan = (float)w / (float)newString.length();
-
-	//		asciiVal = newString.at(w);
-
-	//		std::cout << newString.at(w) << "\n";
-
 	//		targetFrequency = 2000.0f * (int)asciiVal;
 	//		phaseAdderTarget = (targetFrequency / (float)sampleRate) * TWO_PI;
-	//	}
-	//}
 
-	//buffer chunk
-	float buffChunk = bufferSize / (float)playString.length();
+	if (mode == 0) {
 
-	// sin (n) seems to have trouble when n is very large, so we
-	// keep phase in the range of 0-TWO_PI like this:
-	
+		float buffChunk = bufferSize / (float)playString.length();
 
-	//phaseAdder = 0.95f * phaseAdder + 0.05f * phaseAdderTarget;
-		
-	if (playString.length() != 0) {
-			
-		t = fmod(ofGetElapsedTimeMillis(),(float)playString.length() * readingSpeed);
-		//map the buffer position to the string
-		int mapString = (int)ofMap(t, 0.0, (float)playString.length() * readingSpeed, 0.0, (float)playString.length());
+		if (playString.length() != 0) {
 
-		volume = (float)checkFrequency(freqString, playString.at(mapString))/ (float)playString.size();
+			t = fmod(ofGetElapsedTimeMillis(), (float)playString.length() * readingSpeed);
+			//map the buffer position to the string
+			int mapString = (int)ofMap(t, 0.0, (float)playString.length() * readingSpeed, 0.0, (float)playString.length());
 
+			volumeOne = (float)checkFrequency(freqString, playString.at(mapString)) / (float)playString.size();
 
-		asciiVal = playString.at(mapString);
-		//std::cout << "T: "<<t <<" MAP: "<<mapString<< "\n";
+			asciiVal = playString.at(mapString);
+			//std::cout << "T: "<<t <<" MAP: "<<mapString<< "\n";
 
-		phaseAdderTarget = ((2000.0f * (float)asciiVal) / (float)sampleRate) * TWO_PI;
+			phaseAdderTarget = ((2000.0f * (float)asciiVal) / (float)sampleRate) * TWO_PI;
+		}
 
+		phaseAdder = 0.95f * phaseAdder + 0.05f * phaseAdderTarget;
 
+		// sin (n) seems to have trouble when n is very large, so we
+		// keep phase in the range of 0-TWO_PI like this:
+		while (phase > TWO_PI) {
+			phase -= TWO_PI;
+		}
+
+		for (int i = 0; i < bufferSize; i++) {
+
+			phase += phaseAdder;
+
+			float sample = sin(phase);
+			lAudio[i] = output[i] = sample * volumeOne * masterVol;
+			rAudio[i] = output[i + 1] = sample * volumeOne * masterVol;
+		}
 	}
-		
-	phaseAdder = 0.95f * phaseAdder + 0.05f * phaseAdderTarget;
+	else if (mode == 1) {
 
-	while (phase > TWO_PI) {
-		phase -= TWO_PI;
-	}
+		if (spilledVec.size() != 0) {
 
-	for (int i = 0; i < bufferSize; i++) {
+			//t = fmod(ofGetElapsedTimeMillis(), (float)spilledVec.size() * readingSpeed);
+			//map the buffer position to the string
+			//int mapString = (int)ofMap(t, 0.0, (float)spilledVec.size() * readingSpeed, 0.0, (float)spilledVec.size());
 
-		//phase = ;
-		//phase = (targetFrequency / (float)sampleRate) * TWO_PI;
-		//std::cout << "Phase: "<<phase << "\n";
-		//not sure why the example used a while loop rather than an if statement here
-			
-		phase += phaseAdder;
-
-		float sample = sin(phase);
-		lAudio[i] = output[i*nChannels] = sample * volume * leftScale;
-		rAudio[i] = output[i*nChannels + 1] = sample * volume * rightScale;
+			for (int i = 0; i < bufferSize; i += 2) {
+				//phase = ((float)freqA / (float)sampleRate);
+				float sample = waveSelector(phase, pickWave) * (float)volA; // generating a sine wave sample
+				output[i] = sample * masterVol; // writing to the left channel
+				output[i + 1] = sample * masterVol; // writing to the right channel
+				//memorize this equation! phaseOffset (angle) = freq / sampleRate
+				float phaseOffset = ((float)freqA / (float)sampleRate);
+				phase += phaseOffset;
+			}
+		}
 	}
 }
 
@@ -350,7 +371,14 @@ void ofApp::newLine(string jsonString) {
 void ofApp::setupGui() {
 	gui.setup();
 	gui.add(mode.setup("Mode", true));
-	gui.add(loop.setup("Loop ", true));
+	gui.add(masterVol.setup("Master Volume", .5, 0.0, 1.0));
+	gui.add(start.setup("Start Year", 2016, 1960, 2017));
+	gui.add(duration.setup("Search Duration", 1, 1, 10));
+	gui.add(freqA.setup("frequency A", 200.0f, 60.0f, 2500.0f));
+	gui.add(freqB.setup("frequency B", 800.0f, 60.0f, 2500.0f));
+	gui.add(volScale.setup("Volume Scale", true));
+	gui.add(lerpIncrement.setup("Lerp Increment", 30.0, 1.0, 120.0));
+
 
 }
 
@@ -392,8 +420,8 @@ void ofApp::searchTime(string input) {
 	if (newSearch == true) {
 		newSearch = false;
 		allDone = false;
-		y = 2014;
-		years = 3;
+		y = start;
+		years = duration;
 		yStart = y;
 
 		yearMonth.clear();
@@ -469,14 +497,6 @@ void ofApp::searchTime(string input) {
 	}
 }
 
-void ofApp::playText(string pTe) {
-
-}
-
-void ofApp::playTime(string pTi) {
-
-}
-
 string ofApp::formatDate(int month) {
 
 	switch (month) {
@@ -517,7 +537,6 @@ string ofApp::formatDate(int month) {
 			mString = "1231";
 			break;
 	}
-
 	return mString;
 }
 
@@ -527,5 +546,110 @@ void ofApp::printVec(vector<vector <int> > vov) {
 		for (int b = 0; b < vov[a].size(); b++) {
 			std::cout << vov[a][b] << endl;
 		}
+	}
+	prepVec(vov);
+}
+
+void ofApp::prepVec(vector<vector <int> > vov) {
+
+	vecMax = 0;
+	vecMin = 10000;
+	vecItems = 0;
+	spilledVec.clear();
+
+	for (int a = 0; a < vov.size(); a++) {
+		for (int b = 0; b < vov[a].size(); b++) {
+			if (vov[a][b] > vecMax) {
+				vecMax = vov[a][b];
+			}
+			if (vov[a][b] < vecMin) {
+				vecMin = vov[a][b];
+			}
+			vecItems++;
+			spilledVec.push_back(vov[a][b]);
+		}
+	}
+	ofLogNotice("Vector Items", ofToString(vecItems));
+	ofLogNotice("Vector Max", ofToString(vecMax));
+	ofLogNotice("Vector Min", ofToString(vecMin));
+}
+
+float ofApp::waveSelector(float phase, int waveType) {
+	switch (waveType) {
+	case 1://sine
+		return sin(phase*TWO_PI);
+		break;
+	case 2://square
+		return sin(phase*TWO_PI)>0 ? 1 : -1;
+		break;
+	case 3://sawtooth
+		return fmod(phase, TWO_PI);
+		break;
+	case 4://triangle
+		return abs(sin(phase*TWO_PI));
+		break;
+	default:
+		break;
+	}
+}
+
+void ofApp::stringWave() {
+	switch (pickWave) {
+	case 1:
+		thisWave = "sine";
+		break;
+	case 2:
+		thisWave = "square";
+		break;
+	case 3:
+		thisWave = "sawtooth";
+		break;
+	case 4:
+		thisWave = "triangle";
+		break;
+	}
+}
+
+void ofApp::changeSound() {
+
+	destination = spilledVec[lerpPlace];
+	if (volScale) {
+		//scale based on an all time max
+		destination = (float)ofMap(destination, 0.0, 2500.0, 0.0, 1.0);
+	}
+	else {
+		//scale in relation to search hits
+		destination = (float)ofMap(destination, (float)vecMin, (float)vecMax, 0.0, 1.0);
+	}
+	//set the lerp rate in an interesting way so the time between points remains constant
+
+	lerpAmt = (float)abs(prevDest - destination) / (float)lerpIncrement; //framerate is 60, this is 1 second intervals
+	volA = ofLerp(volA, (float)destination, lerpAmt); //default was 0.02f
+
+	volA = MAX(volA, 0.0);//for some reason it glitched out and went negative when the lerp amount was weird...
+
+	if (abs(destination - volA) < .01 ) {
+		lerpPlace++;
+		//ofLogNotice() << "new lerp " << lerpPlace <<"\n";
+
+		if (lerpPlace == spilledVec.size()) {
+			lerpPlace = 0;
+		}
+		prevDest = destination;
+	}
+}
+
+//not being used currently
+void ofApp::sustainSound() {
+	float startTime = ofGetElapsedTimeMillis();
+
+	//sustainTime = false;
+
+	float length = 2000;
+
+	if (ofGetElapsedTimeMillis() - startTime > length) {
+		//sustainTime = true;
+
+		changeSound();
 	}
 }

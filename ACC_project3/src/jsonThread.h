@@ -35,7 +35,7 @@ class jsonThread : public ofThread {
 
 		void threadedFunction() {
 			
-			ofLogNotice("Thread", "Threading!");
+			//ofLogNotice("Thread", "Threading!");
 
 			if (!done) {
 				urlT = "http://api.nytimes.com/svc/search/v2/articlesearch.json?q=" + input + "&facet_field=source&begin_date=" + begin + "&end_date=" + end + "&fl=headline&api-key=" + searchKey;
