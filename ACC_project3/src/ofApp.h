@@ -26,6 +26,9 @@ class ofApp : public ofBaseApp{
 
 		string typing;
 		string newString;
+		string newStringA;
+		string newStringB;
+
 		
 		void audioOut(float * input, int bufferSize, int nChannels);
 		//void audioOut(ofSoundBuffer &output);
@@ -49,11 +52,11 @@ class ofApp : public ofBaseApp{
 		int textH;
 		int textH2;
 
-		//------------------- for the simple sine wave synthesis
-		float 	targetFrequency;
-		float 	phase;
-		float 	phaseAdder;
-		float 	phaseAdderTarget;
+		//------------------- for the wave synthesis
+		float 	targetFrequencyA;
+		float 	phaseA;
+		float 	phaseAdderA;
+		float 	phaseAdderTargetA;
 
 		float 	targetFrequencyB;
 		float 	phaseB;
@@ -96,6 +99,7 @@ class ofApp : public ofBaseApp{
 		ofxPanel gui;
 		void setupGui();
 		ofxToggle	mode;
+		ofxToggle	searchChannel;
 		ofxFloatSlider	masterVol;
 		ofxIntSlider	start;
 		ofxIntSlider	duration;
@@ -103,6 +107,11 @@ class ofApp : public ofBaseApp{
 		ofxFloatSlider	freqB;
 		ofxToggle	volScale;
 		ofxFloatSlider	lerpIncrement;
+		ofxToggle	muteA;
+		ofxToggle	muteB;
+
+		float muteAf;
+		float muteBf;
 
 		float volScaler;
 
@@ -139,11 +148,18 @@ class ofApp : public ofBaseApp{
 		void printVec(vector<vector <int> >);
 
 		void prepVec(vector<vector <int> >);
-		int vecMax;
-		int vecMin;
+		int vecMaxA;
+		int vecMinA;
+		int vecItemsA;
+		vector<int> spilledVecA;
 
-		int vecItems;
-		vector<int> spilledVec;
+		int vecMaxB;
+		int vecMinB;
+		int vecItemsB;
+		vector<int> spilledVecB;
+
+		int globalMax;
+		int globalMin;
 
 		int hitVal;
 
@@ -162,14 +178,20 @@ class ofApp : public ofBaseApp{
 
 		void stringWave();
 
-		void changeSound();
-		void sustainSound();
+		void changeSound(bool AB);
 		float lerpedVol;
 		int lerpPlace;
 
-		float destination;
+		float destinationA;
+		float prevDestA;
+		float lerpAmtA;
 
-		float prevDest;
 
-		float lerpAmt;
+		float destinationB;
+		float prevDestB;
+		float lerpAmtB;
+
+		bool lerpStep;
+
+		void channelMute();
 };
