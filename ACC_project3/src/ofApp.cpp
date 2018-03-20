@@ -110,17 +110,21 @@ void ofApp::update() {
 
 	channelMute();
 
+	/*positionX = ofMap(lerpPlace, 0, spilledVecA.size(), 0.0, 330.0);
+	positionY = ofMap(0.0, 530.0);
+	positionZ = ofMap(0.0, 630.0);*/
+
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
 	//text
 	ofSetColor(100, 200, 100);
-	ofFill;
+	ofNoFill;
 	ofDrawRectangle(0, textH, 500, 220);
 	ofDrawRectangle(450, textH2, ofGetWidth() - 460, 120);
 
-	ofSetColor(100, 0, 0);
+	ofSetColor(255, 255, 255);
 	ofDrawBitmapString("New York Times History Sonifier", 10, textH + 20);
 	ofDrawBitmapString("New search: " +typing, 10, textH + 40);
 	ofDrawBitmapString("Current search A: " + newStringA + " | B : " + newStringB, 10, textH + 60);
@@ -139,8 +143,24 @@ void ofApp::draw(){
 		ofDrawBitmapString("Tab = start/ star", 460, textH2 + 60);
 		ofDrawBitmapString("The ascii value of each letter is used to control it's frequency.", 460, textH2 + 80);
 		ofDrawBitmapString("The volume is determined by the quantity of a given letter.", 460, textH2 + 100);
+
+		for (Json::ArrayIndex i = 0; i < json["response"]["docs"].size(); ++i)
+		{
+			std::string title = json["response"]["docs"][i]["headline"]["main"].asString();
+			std::string author = json["response"]["docs"][i]["byline"]["original"].asString();
+			std::string date = json["response"]["docs"][i]["pub_date"].asString();
+			std::string text = title + " - " + author + " (" + date + ")";
+			if (i == line) {
+				ofSetColor(255, 255, 255);
+			}
+			else {
+				ofSetColor(255, 0, 0);
+			}
+			ofDrawBitmapString(text, 20, 220 + (i * 20));
+		}
 	}
 	else if (mode == 1) {
+		ofSetColor(255, 255, 255);
 		ofDrawBitmapString("Current Date: " + currentDate , 10, textH + 100);
 		ofDrawBitmapString("Current Vol A: " + ofToString(volA), 10, textH + 120);
 		ofDrawBitmapString("Current Vol B: " + ofToString(volB), 10, textH + 140);
@@ -151,27 +171,54 @@ void ofApp::draw(){
 		ofSetColor(255, 255, 255);
 		ofDrawBitmapString("Mode 1: OCCURANCES OVER TIME", 460, textH2 - 5);
 	}
-	
-	
 
-
-
-
-	for (Json::ArrayIndex i = 0; i < json["response"]["docs"].size(); ++i)
-	{
-		std::string title = json["response"]["docs"][i]["headline"]["main"].asString();
-		std::string author = json["response"]["docs"][i]["byline"]["original"].asString();
-		std::string date = json["response"]["docs"][i]["pub_date"].asString();
-		std::string text = title + " - " + author + " (" + date + ")";
-		if (i == line) {
-			ofSetColor(255, 255, 255);
-		}
-		else {
-			ofSetColor(255, 0, 0);
-		}
-		ofDrawBitmapString(text, 20, 200 + (i * 20));
-	}
+	gui.setPosition(ofGetWidth()*.5, 20);
 	gui.draw();
+	
+	//x = 0 - 330
+	//y = 0 - 530
+	//z = 0 - 630
+
+	/*
+	MODE 0
+	X = ascii value
+	Y = 
+	Z =
+	color = 
+	MODE 1
+	X = lerp amount a
+	Y = lerp amount b
+	Z = lerpPlace
+	brighter color = higher volume
+	shape equals frequencies
+	*/
+	if (mode) {
+		ofSetColor((int)ofMap(lerpPlace, 0, spilledVecA.size(), 100, 255), (int)ofMap(volA, 0.0, 1.0, 100, 255), (int)ofMap(volB, 0.0, 1.0, 100, 255));
+	}
+	else {
+		ofSetColor(255, (int)ofMap(volumeOne, 0.0, 1.0, 100, 255), (int)ofMap(volumeOne, 0.0, 1.0, 100, 255));
+	}
+	float x, y, z;
+	float time = ofGetElapsedTimef();
+	for (int i = 0; i < 100; i++) {
+		float width = ofGetWidth();
+		float height = ofGetHeight();
+		float speed = 0.55;
+		float posX = i * positionX;
+		float posY = i * positionY;
+		float posZ = i * positionZ;
+		x = width * ofNoise(time * speed - posX);
+		y = height * ofNoise(time * speed + posY);
+		z = 90 * ofNoise(time * speed + posZ);
+		ofNoFill();
+		ofRotateX(x / 400);
+		ofRotateY(sin(y / 400));
+		ofRotateZ(sin(z / 400));
+		int posa = ofMap(freqA, 0, 2500, 10, 60);
+		int posb = ofMap(freqB, 0, 2500, 10, 60);
+		//ofEllipse(x, y, z, posa, posb);
+		ofTriangle(x, y, z, x+4, y + 8, z, x, y - 8, z);
+	}
 }
 
 //--------------------------------------------------------------
@@ -308,7 +355,8 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels) {
 
 			asciiVal = playString.at(mapString);
 			//std::cout << "T: "<<t <<" MAP: "<<mapString<< "\n";
-
+			
+			positionX = ofMap(asciiVal, 0, 100, 0.0, 530.0);
 			phaseAdderTargetA = ((2000.0f * (float)asciiVal) / (float)sampleRate) * TWO_PI;
 		}
 
@@ -690,6 +738,7 @@ void ofApp::changeSound(bool AB) {
 		//set the lerp rate in an interesting way so the time between points remains constant
 
 		lerpAmtA = (float)abs(prevDestA - destinationA) / (float)lerpIncrement; //framerate is 60, this is 1 second intervals
+		positionX = ofMap(lerpAmtA, 0.0, 1.0, 0.0, 330.0);
 		volA = ofLerp(volA, (float)destinationA, lerpAmtA); //default was 0.02f
 		volA = MAX(volA, 0.0);//for some reason it glitched out and went negative when the lerp amount was weird...
 
@@ -700,6 +749,7 @@ void ofApp::changeSound(bool AB) {
 			lerpPlace++;
 			lerpStep = true;
 			//ofLogNotice() << "new lerp " << lerpPlace <<"\n";
+			positionZ = ofMap(lerpPlace, 0.0, (float)spilledVecA.size(), 0.0, 330.0);
 
 			if (lerpPlace == spilledVecA.size()) {
 				lerpPlace = 0;
@@ -735,6 +785,7 @@ void ofApp::changeSound(bool AB) {
 		//set the lerp rate in an interesting way so the time between points remains constant
 
 		lerpAmtB = (float)abs(prevDestB - destinationB) / (float)lerpIncrement; //framerate is 60, this is 1 second intervals
+		positionY = ofMap(lerpAmtB, 0.0, 1.0, 0.0, 530.0);
 		volB = ofLerp(volB, (float)destinationB, lerpAmtB); //default was 0.02f
 		volB = MAX(volB, 0.0);//for some reason it glitched out and went negative when the lerp amount was weird...
 	}

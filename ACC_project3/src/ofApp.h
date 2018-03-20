@@ -194,4 +194,8 @@ class ofApp : public ofBaseApp{
 		bool lerpStep;
 
 		void channelMute();
+
+		float positionX;
+		float	positionY;
+		float positionZ;
 };
