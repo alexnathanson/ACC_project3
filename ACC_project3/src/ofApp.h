@@ -198,4 +198,8 @@ class ofApp : public ofBaseApp{
 		float positionX;
 		float	positionY;
 		float positionZ;
+
+		float positionXt;
+		float	positionYt;
+		float positionZt;
 };

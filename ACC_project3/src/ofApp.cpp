@@ -121,19 +121,19 @@ void ofApp::draw(){
 	//text
 	ofSetColor(100, 200, 100);
 	ofNoFill;
-	ofDrawRectangle(0, textH, 500, 220);
-	ofDrawRectangle(450, textH2, ofGetWidth() - 460, 120);
+	ofDrawRectangle(0, textH, 500, 200);
+	ofDrawRectangle(450, textH2, ofGetWidth() - 450, ofGetHeight()-textH2);
 
 	ofSetColor(255, 255, 255);
-	ofDrawBitmapString("New York Times History Sonifier", 10, textH + 20);
+	ofDrawBitmapString("New York Times History Sonifier/ Public Event Sequencer", 10, textH + 20);
 	ofDrawBitmapString("New search: " +typing, 10, textH + 40);
-	ofDrawBitmapString("Current search A: " + newStringA + " | B : " + newStringB, 10, textH + 60);
+	ofDrawBitmapString("Current search A: " + newStringA + " B : " + newStringB, 10, textH + 60);
 
 	if (mode == 0) {
-		ofDrawBitmapString("Current Char: " + ofToString(asciiVal), 10, textH + 100);
-		ofDrawBitmapString("Reading speed: " + ofToString(readingSpeed), 10, textH + 120);
-		ofDrawBitmapString("Unique chars: " + ofToString(freqString.size()), 10, textH + 140);
-		ofDrawBitmapString("Current line: " + ofToString(line), 10, textH + 160);
+		ofDrawBitmapString("Current Char: " + ofToString(asciiVal), 10, textH + 80);
+		ofDrawBitmapString("Reading speed: " + ofToString(readingSpeed), 10, textH + 100);
+		ofDrawBitmapString("Unique chars: " + ofToString(freqString.size()), 10, textH + 120);
+		ofDrawBitmapString("Current line: " + ofToString(line), 10, textH + 140);
 
 		ofSetColor(255, 255, 255);
 		ofDrawBitmapString("Mode 0: ASCII SOUNDS", 460, textH2 - 5);
@@ -156,20 +156,36 @@ void ofApp::draw(){
 			else {
 				ofSetColor(255, 0, 0);
 			}
-			ofDrawBitmapString(text, 20, 220 + (i * 20));
+			ofDrawBitmapString(text, 20, 240 + (i * 20));
 		}
 	}
 	else if (mode == 1) {
 		ofSetColor(255, 255, 255);
-		ofDrawBitmapString("Current Date: " + currentDate , 10, textH + 100);
-		ofDrawBitmapString("Current Vol A: " + ofToString(volA), 10, textH + 120);
-		ofDrawBitmapString("Current Vol B: " + ofToString(volB), 10, textH + 140);
-		ofDrawBitmapString("Total hits, current hit, destination: " + ofToString(vecItemsA) + ":" + ofToString(lerpPlace) + ":" + ofToString(destinationA), 10, textH + 160);
-		ofDrawBitmapString("Total hits, current hit, destination: " + ofToString(vecItemsB) + ":" + ofToString(lerpPlace) + ":" + ofToString(destinationB), 10, textH + 180);
-		ofDrawBitmapString("Wave type: " + thisWave, 10, textH + 200);
+		ofDrawBitmapString("Current Date: " + currentDate , 10, textH + 80);
+		ofDrawBitmapString("Current Vol A: " + ofToString(volA), 10, textH + 100);
+		ofDrawBitmapString("Current Vol B: " + ofToString(volB), 10, textH + 120);
+		ofDrawBitmapString("Total hits, current hit, destination: " + ofToString(vecItemsA) + ":" + ofToString(lerpPlace) + ":" + ofToString(destinationA), 10, textH + 140);
+		ofDrawBitmapString("Total hits, current hit, destination: " + ofToString(vecItemsB) + ":" + ofToString(lerpPlace) + ":" + ofToString(destinationB), 10, textH + 160);
+		ofDrawBitmapString("Wave type: " + thisWave, 10, textH + 180);
 
 		ofSetColor(255, 255, 255);
-		ofDrawBitmapString("Mode 1: OCCURANCES OVER TIME", 460, textH2 - 5);
+		ofDrawBitmapString("Mode 1: OCCURANCES OVER TIME", 460, textH2 + 20);
+
+		if (spilledVecA.size() != 0) {
+			ofDrawBitmapString("Min: " + ofToString(globalMin) + " Max: " + ofToString(globalMax), 460, textH2 + 40);
+			for (int i = 0; i < spilledVecA.size(); i++)
+			{
+				ofDrawBitmapString(spilledVecA[i], 460, textH2 + 60 + (i * 20));
+			}
+		}
+		if (spilledVecB.size() != 0) {
+			for (int i = 0; i < spilledVecB.size(); i++)
+			{
+				ofDrawBitmapString(spilledVecB[i], 500, textH2 + 60 + (i * 20));
+			}
+
+		}
+		
 	}
 
 	gui.setPosition(ofGetWidth()*.5, 20);
@@ -186,27 +202,29 @@ void ofApp::draw(){
 	Z =
 	color = 
 	MODE 1
-	X = lerp amount a
-	Y = lerp amount b
-	Z = lerpPlace
+	X = lerp amount
+	Y = lerp pos
+	Z = freq
 	brighter color = higher volume
 	shape equals frequencies
 	*/
 	if (mode) {
-		ofSetColor((int)ofMap(lerpPlace, 0, spilledVecA.size(), 100, 255), (int)ofMap(volA, 0.0, 1.0, 100, 255), (int)ofMap(volB, 0.0, 1.0, 100, 255));
+		ofSetColor(0, (int)ofMap(volB, 0.0, 1.0, 100, 255), (int)ofMap(volA, 0.0, 1.0, 100, 255));
 	}
 	else {
 		ofSetColor(255, (int)ofMap(volumeOne, 0.0, 1.0, 100, 255), (int)ofMap(volumeOne, 0.0, 1.0, 100, 255));
 	}
 	float x, y, z;
+	float xt, yt, zt;
+
 	float time = ofGetElapsedTimef();
-	for (int i = 0; i < 100; i++) {
+	for (int i = 0; i < 50; i++) {
 		float width = ofGetWidth();
 		float height = ofGetHeight();
 		float speed = 0.55;
 		float posX = i * positionX;
-		float posY = i * positionY;
-		float posZ = i * positionZ;
+		float posY = i * ofMap(lerpPlace, 0, spilledVecA.size(), 0, 530);
+		float posZ = i * ofMap(freqA, 0, 2500, 10, 650);
 		x = width * ofNoise(time * speed - posX);
 		y = height * ofNoise(time * speed + posY);
 		z = 90 * ofNoise(time * speed + posZ);
@@ -216,8 +234,29 @@ void ofApp::draw(){
 		ofRotateZ(sin(z / 400));
 		int posa = ofMap(freqA, 0, 2500, 10, 60);
 		int posb = ofMap(freqB, 0, 2500, 10, 60);
-		//ofEllipse(x, y, z, posa, posb);
-		ofTriangle(x, y, z, x+4, y + 8, z, x, y - 8, z);
+		ofEllipse(x, y, z, posa, posb);
+	}
+	if (mode) {
+		ofSetColor((int)ofMap(volA, 0.0, 1.0, 100, 255), 0, (int)ofMap(volB, 0.0, 1.0, 100, 255));
+
+		for (int i = 0; i < 50; i++) {
+			float width = ofGetWidth();
+			float height = ofGetHeight();
+			float speed = 0.55;
+			float posXt = i * positionXt;
+			float posYt = i * ofMap(lerpPlace, 0, spilledVecA.size(), 0, 530);
+			float posZt = i * ofMap(freqB, 0, 2500, 10, 650);
+			xt = width * ofNoise(time * speed - posXt);
+			yt = height * ofNoise(time * speed + posYt);
+			zt = 90 * ofNoise(time * speed + posZt);
+			ofNoFill();
+			ofRotateX(x / 400);
+			ofRotateY(sin(y / 400));
+			ofRotateZ(sin(z / 400));
+			int offsetx = ofMap(freqA, 0, 2500, 4, 60);
+			int offsety = ofMap(freqB, 0, 2500, 4, 60);
+			ofTriangle(xt, yt, zt, xt + offsetx, yt - offsety, zt, xt - offsetx, yt - offsety, zt);
+		}
 	}
 }
 
@@ -785,7 +824,7 @@ void ofApp::changeSound(bool AB) {
 		//set the lerp rate in an interesting way so the time between points remains constant
 
 		lerpAmtB = (float)abs(prevDestB - destinationB) / (float)lerpIncrement; //framerate is 60, this is 1 second intervals
-		positionY = ofMap(lerpAmtB, 0.0, 1.0, 0.0, 530.0);
+		positionXt = ofMap(lerpAmtB, 0.0, 1.0, 0.0, 530.0);
 		volB = ofLerp(volB, (float)destinationB, lerpAmtB); //default was 0.02f
 		volB = MAX(volB, 0.0);//for some reason it glitched out and went negative when the lerp amount was weird...
 	}
