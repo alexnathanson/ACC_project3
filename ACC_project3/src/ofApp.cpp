@@ -42,7 +42,11 @@ void ofApp::setup(){
 
 	line = 0;
 
-	searchKey = "8c66b14d868d480b89812149a2288372";
+	//alexnathanson.com key
+	//searchKey = "8c66b14d868d480b89812149a2288372";
+
+	//gmail key
+	searchKey = "0f9a222e87344442aba1dca7467d70c7";
 
 	loading = false;
 	newTime = false;
@@ -69,9 +73,6 @@ void ofApp::setup(){
 void ofApp::update() {
 	ofBackground(0);
 
-	//seperate searchs
-	//ofSplitString(newString, ",");
-	//format search term
 	//seperate by word and replace spaces with + signs
 	vector <string> format = ofSplitString(newString, " "); //doesn't need to be cleared because it's being initialized here
 	
@@ -109,11 +110,6 @@ void ofApp::update() {
 	}
 
 	channelMute();
-
-	/*positionX = ofMap(lerpPlace, 0, spilledVecA.size(), 0.0, 330.0);
-	positionY = ofMap(0.0, 530.0);
-	positionZ = ofMap(0.0, 630.0);*/
-
 }
 
 //--------------------------------------------------------------
@@ -129,6 +125,7 @@ void ofApp::draw(){
 	ofDrawBitmapString("New search: " +typing, 10, textH + 40);
 	ofDrawBitmapString("Current search A: " + newStringA + " B : " + newStringB, 10, textH + 60);
 
+	//print mode 0 info
 	if (mode == 0) {
 		ofDrawBitmapString("Current Char: " + ofToString(asciiVal), 10, textH + 80);
 		ofDrawBitmapString("Reading speed: " + ofToString(readingSpeed), 10, textH + 100);
@@ -154,12 +151,12 @@ void ofApp::draw(){
 				ofSetColor(255, 255, 255);
 			}
 			else {
-				ofSetColor(255, 0, 0);
+				ofSetColor(0, 200, 0);
 			}
 			ofDrawBitmapString(text, 20, 240 + (i * 20));
 		}
 	}
-	else if (mode == 1) {
+	else if (mode == 1) { //print mode 1 info
 		ofSetColor(255, 255, 255);
 		ofDrawBitmapString("Current Date: " + currentDate , 10, textH + 80);
 		ofDrawBitmapString("Current Vol A: " + ofToString(volA), 10, textH + 100);
@@ -183,17 +180,11 @@ void ofApp::draw(){
 			{
 				ofDrawBitmapString(spilledVecB[i], 500, textH2 + 60 + (i * 20));
 			}
-
 		}
-		
 	}
 
 	gui.setPosition(ofGetWidth()*.5, 20);
 	gui.draw();
-	
-	//x = 0 - 330
-	//y = 0 - 530
-	//z = 0 - 630
 
 	/*
 	MODE 0
@@ -265,6 +256,7 @@ void ofApp::keyPressed(int key){
 	//uncomment out if you want to see the ascii value of something
 	//std::cout << key << "\n";
 
+	//a string containing special characters that may or may not break the search API
 	string specials = "~!@#%^&*()[]<>";
 
 	if (key == OF_KEY_RETURN) {
@@ -364,7 +356,6 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 
 }
 
-
 /*
 audioOut is an asynchronous function that runs outside our main draw/update loops
 output is always an array of samples. We can represent arrays using pointers
@@ -376,9 +367,6 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels) {
 	pan = 0.5f;
 	float leftScale = 1 - pan;
 	float rightScale = pan;
-
-	//		targetFrequency = 2000.0f * (int)asciiVal;
-	//		phaseAdderTarget = (targetFrequency / (float)sampleRate) * TWO_PI;
 
 	if (mode == 0) {
 
@@ -436,6 +424,7 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels) {
 	}
 }
 
+//determing and store the frequency of a given char in Mode 0
 void ofApp::stringFrequency(string sortString) {
 
 	freqString.clear();
@@ -470,6 +459,7 @@ void ofApp::stringFrequency(string sortString) {
 	}
 }
 
+//check the frequency of a given char in mode 0
 int ofApp::checkFrequency(vector<vector <char> > checkVec, char checkChar) {
 
 	for (int v = 0; v < checkVec.size(); v++) {
@@ -479,6 +469,7 @@ int ofApp::checkFrequency(vector<vector <char> > checkVec, char checkChar) {
 	}
 }
 
+//set which line is being played in mode 0
 void ofApp::newLine(string jsonString) {
 	playString = json["response"]["docs"][line]["headline"]["main"].asString();
 	stringFrequency(playString);
@@ -497,10 +488,9 @@ void ofApp::setupGui() {
 	gui.add(lerpIncrement.setup("Lerp Increment", 30.0, 0.5, 60.0));
 	gui.add(muteA.setup("Mute A", false));
 	gui.add(muteB.setup("Mute B", false));
-
-
 }
 
+//Mode 0 search API
 void ofApp::searchText(string input) {
 
 	//old key: 52697f63c9ade478ec6f2c7d71811aa6:17:61363877
@@ -526,6 +516,7 @@ void ofApp::searchText(string input) {
 	}
 }
 
+//Mode 1 search API
 void ofApp::searchTime(string input) {
 
 	//filter the results
@@ -538,6 +529,7 @@ void ofApp::searchTime(string input) {
 	if (newSearch == true) {
 		newSearch = false;
 		allDone = false;
+		loading = false;
 		y = start;
 		ofLogNotice() << "new search!" << endl;
 		years = duration;
@@ -548,11 +540,9 @@ void ofApp::searchTime(string input) {
 		m = 1;
 
 		//restrict to 2017
-		//change this to get todays date
 		if (y + years > 2017) {
 			years = 2017 - y;
 		}
-
 		ofLogNotice("Search Time") << "It's time!";
 	}
 
@@ -576,7 +566,8 @@ void ofApp::searchTime(string input) {
 			month = formatDate(m);
 			end = year + month;
 			begin = year + month.replace(2, 2, "01");
-						
+			ofLogNotice("begin", year + " " + month + " = " + begin);
+
 			loading = true;
 
 			getJSON.setup(input, begin, end, searchKey);
@@ -609,18 +600,22 @@ void ofApp::searchTime(string input) {
 				if (!allDone) {
 					y++;
 				}
-				else {//do I need an else statement here?
-					y = start;
-				}
 			}
+			//if (allDone) {//do I need an else statement here?
+			//	y = start;
+			//	ofLogNotice("restarted?", "yes!");
+			//}
+
 		}
 
 		if (allDone) {
+			//y = start;
 			printVec(yearMonth);
 		}
 	}
 }
 
+//formated the date as a string for the search
 string ofApp::formatDate(int month) {
 
 	switch (month) {
@@ -664,6 +659,7 @@ string ofApp::formatDate(int month) {
 	return mString;
 }
 
+//print the hits returned by the search 
 void ofApp::printVec(vector<vector <int> > vov) {
 
 	for (int a = 0; a < vov.size(); a++) {
@@ -674,6 +670,7 @@ void ofApp::printVec(vector<vector <int> > vov) {
 	prepVec(vov);
 }
 
+//get the mins and max, reformat it into a single dimension vector
 void ofApp::prepVec(vector<vector <int> > vov) {
 
 	if (!searchChannel) {//channel A = unchecked
@@ -725,6 +722,7 @@ void ofApp::prepVec(vector<vector <int> > vov) {
 	globalMin = MIN(vecMinA, vecMinB);
 }
 
+//set the wave type: controlled  by keys "+" and "-"
 float ofApp::waveSelector(float phase, int waveType) {
 	switch (waveType) {
 	case 1://sine
@@ -744,6 +742,7 @@ float ofApp::waveSelector(float phase, int waveType) {
 	}
 }
 
+//print the wave type
 void ofApp::stringWave() {
 	switch (pickWave) {
 	case 1:
@@ -761,8 +760,8 @@ void ofApp::stringWave() {
 	}
 }
 
+//lerp the volume of each channel
 void ofApp::changeSound(bool AB) {
-	//for now just invert the volume
 
 	if (!AB) {
 		destinationA = spilledVecA[lerpPlace];
@@ -774,22 +773,21 @@ void ofApp::changeSound(bool AB) {
 			//scale in relation to search hits
 			destinationA = (float)ofMap(destinationA, (float)globalMin, (float)globalMax, 0.0, 1.0);
 		}
-		//set the lerp rate in an interesting way so the time between points remains constant
 
-		lerpAmtA = (float)abs(prevDestA - destinationA) / (float)lerpIncrement; //framerate is 60, this is 1 second intervals
-		positionX = ofMap(lerpAmtA, 0.0, 1.0, 0.0, 330.0);
-		volA = ofLerp(volA, (float)destinationA, lerpAmtA); //default was 0.02f
-		volA = MAX(volA, 0.0);//for some reason it glitched out and went negative when the lerp amount was weird...
+		//set lerp rate so each interval is constant
+		lerpAmtA = (float)abs(prevDestA - destinationA)/ (float)lerpIncrement; //framerate is 60, this is 1 second intervals
+		positionX = ofMap(lerpAmtA, 0.0, 1.0, 0.0, 330.0);//set position of the visuals
+		volA = ofLerp(volA, (float)destinationA, lerpAmtA); //original lerpAmt was 0.02f
+		volA = MAX(volA, 0.0);//keeps it above 0, for some reason it glitched out and went negative when the lerp amount was weird...
 
-		//test b as the inverted volume of a
-		//volB = 1.0 - volA;
-
+		//check if lerp is finished and increment it
 		if (abs(destinationA - volA) < .01) {
 			lerpPlace++;
 			lerpStep = true;
 			//ofLogNotice() << "new lerp " << lerpPlace <<"\n";
 			positionZ = ofMap(lerpPlace, 0.0, (float)spilledVecA.size(), 0.0, 330.0);
 
+			//loop it
 			if (lerpPlace == spilledVecA.size()) {
 				lerpPlace = 0;
 			}
@@ -804,7 +802,7 @@ void ofApp::changeSound(bool AB) {
 			lerpStep = false;
 		}
 
-		//ensure that it wont break if A is larger than B
+		//ensures that it wont break if A is larger than B
 		if (lerpPlace < spilledVecB.size()) {
 			destinationB = spilledVecB[lerpPlace];
 		}
@@ -821,15 +819,14 @@ void ofApp::changeSound(bool AB) {
 			destinationB = (float)ofMap(destinationB, (float)globalMin, (float)globalMax, 0.0, 1.0);
 		}
 
-		//set the lerp rate in an interesting way so the time between points remains constant
-
-		lerpAmtB = (float)abs(prevDestB - destinationB) / (float)lerpIncrement; //framerate is 60, this is 1 second intervals
+		lerpAmtB = (float)abs(prevDestB - destinationB)/ (float)lerpIncrement; //framerate is 60, this is 1 second intervals
 		positionXt = ofMap(lerpAmtB, 0.0, 1.0, 0.0, 530.0);
 		volB = ofLerp(volB, (float)destinationB, lerpAmtB); //default was 0.02f
 		volB = MAX(volB, 0.0);//for some reason it glitched out and went negative when the lerp amount was weird...
 	}
 }
 
+//check if the channel needs to be muted
 void ofApp::channelMute() {
 	if (muteA) {
 		muteAf = 0.0;
