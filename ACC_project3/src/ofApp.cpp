@@ -566,7 +566,7 @@ void ofApp::searchTime(string input) {
 			month = formatDate(m);
 			end = year + month;
 			begin = year + month.replace(2, 2, "01");
-			ofLogNotice("begin", year + " " + month + " = " + begin);
+			//ofLogNotice("begin", year + " " + month + " = " + begin);
 
 			loading = true;
 
