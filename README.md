@@ -1,6 +1,8 @@
 # ACC_project3 - A NYT Headline Sonifier
 
-Enter a word to search and it will return and play the 10 most recent articles on that topic.
+Mode 0: Enter a word to search and it will return and sonify the 10 most recent headlines on that topic.
+
+Mode 1: Enter a word to search and it will return and sonify the hits for a given time period.
 
 NY Times Article Search API info
 

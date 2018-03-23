@@ -42,10 +42,9 @@ void ofApp::setup(){
 
 	line = 0;
 
-	//alexnathanson.com key
-	//searchKey = "8c66b14d868d480b89812149a2288372";
+	//get your api key at http://developer.nytimes.com/
 
-	//gmail key
+	//test key
 	searchKey = "0f9a222e87344442aba1dca7467d70c7";
 
 	loading = false;
